@@ -1,0 +1,18 @@
+{
+  "pubkey": "c237744a59f7b5511778f0110e4bce94f226443d3167df1a641b522a255dd56a",
+  "created_at": 1767225600,
+  "kind": 1,
+  "tags": [
+    [
+      "t",
+      "web3"
+    ],
+    [
+      "t",
+      "laboratorio"
+    ]
+  ],
+  "content": "Hola, Web3: una nota de prueba viaja entre relays.",
+  "id": "70d155a3fa6609b94ced952576165f8a5a186f911b2114c4046a17d12b8687a0",
+  "sig": "370b45281aeac82f500c78712593f44b2324d20ec346b5edbe4827c8514e840030c1f50514a25c4c11cf2a6c30d1915791a407aedb42b59fd38e5413c457df03"
+}
