@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Una nota, una identidad criptográfica y cuatro destinos independientes. Estudiamos integridad y disponibilidad sin confundirlas.">
+<meta name="color-scheme" content="light">
+<title>Lab 19 · Nostr: notas firmadas y múltiples relays | Web3 Labs</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="script.js">
+</script>
+</head>
+<body class="lab-19">
+<a class="skip-link" href="#introduccion">Saltar al contenido</a>
+<header class="navbar">
+<a class="brand" href="../index.html">N<span class="brand-accent">/</span>NOTAS</a>
+<nav aria-label="Navegación del laboratorio">
+<a href="#desarrollo">Desarrollo</a>
+<a href="#interactivo">Explorar</a>
+<a href="#resultados">Resultados</a>
+<a href="README.md">README ↗</a>
+</nav>
+<span class="nav-code">L19 / S22</span>
+</header>
+<main>
+<header class="hero">
+<div class="hero-copy">
+<p class="eyebrow">LABORATORIO 19 <span>SESIÓN 22</span>
+</p>
+<h1>La firma viaja.<br>
+<em>La voz se distribuye.</em>
+</h1>
+<p class="hero-description">Una nota, una identidad criptográfica y cuatro destinos independientes. Estudiamos integridad y disponibilidad sin confundirlas.</p>
+<div class="hero-meta">
+<span>Nostr / NIP-01 / Schnorr / Relays</span>
+<span>Informe académico interactivo</span>
+</div>
+<a class="hero-link" href="#interactivo">Verificar la nota de prueba <span aria-hidden="true">↘</span>
+</a>
+</div>
+<div class="hero-art">
+<div class="social-art">
+<div class="note-avatar">A</div>
+<div>
+<strong>Aurora / identidad de prueba</strong>
+<small>NOTA TIPO 1 · DEMOSTRACIÓN LOCAL</small>
+</div>
+<blockquote>Hola, Web3: una nota de prueba viaja entre relays.</blockquote>
+<div class="note-tags">
+<span>#web3</span>
+<span>#laboratorio</span>
+</div>
+<div class="social-stamp">
+<span>✓</span> FIRMA VERIFICABLE</div>
+<div class="relay-mini">
+<span>damus</span>
+<span>nos.lol</span>
+<span>wine</span>
+<span>clase</span>
+</div>
+</div>
+</div>
+<div class="hero-footer">
+<span>FIRMAR UNA VEZ · DISTRIBUIR VARIAS VECES</span>
+<span>HTML · CSS · JavaScript</span>
+</div>
+</header>
+<div class="report-layout">
+<aside class="chapter-nav" aria-label="Índice del informe">
+<span>EN ESTE INFORME</span>
+<a href="#introduccion">01 / Contexto</a>
+<a href="#instrucciones">02 / Instrucciones</a>
+<a href="#objetivos">03 / Objetivos</a>
+<a href="#tecnologias">04 / Tecnologías</a>
+<a href="#desarrollo">05 / Desarrollo</a>
+<a href="#interactivo">06 / Interacción</a>
+<a href="#resultados">07 / Resultados</a>
+<a href="#analisis">08 / Análisis crítico</a>
+<a href="#rubrica">09 / Rúbrica</a>
+<a href="#conclusiones">10 / Conclusiones</a>
+<a href="#aprendizajes">11 / Aprendizajes</a>
+</aside>
+<div class="report">
+<section id="introduccion" class="report-section " aria-labelledby="introduccion-title">
+<div class="section-heading">
+<span class="section-index">introduccion</span>
+<h2 id="introduccion-title">Introducción</h2>
+</div>
+<p>Nostr separa identidad y publicación: un autor firma eventos y los envía a relays que pueden conservarlos o rechazarlos según sus reglas. La identidad criptográfica no depende de una cuenta creada por cada servidor. Analizamos cómo verificar integridad localmente y cómo distribuir el mismo evento entre destinos independientes, manteniendo claras las diferencias entre firma válida, aceptación, recuperación y permanencia.</p>
+<p>Trabajamos exclusivamente con una nota de prueba. El fixture incluido tiene identificador y firma calculados realmente; su clave privada se utilizó temporalmente en memoria al crearlo y no se conservó en los archivos. La interfaz no solicita claves, no publica eventos y no abre conexiones a relays. Los estados de distribución son escenarios ilustrativos que permiten interpretar la arquitectura sin afirmar actividad externa.</p>
+</section>
+<section id="instrucciones" class="report-section instructions" aria-labelledby="instrucciones-title">
+<div class="section-heading">
+<span class="section-index">instrucciones</span>
+<h2 id="instrucciones-title">Instrucciones del laboratorio</h2>
+</div>
+<p>En este laboratorio trabajamos en Visual Studio Code para desarrollar una presentación sobre identidad criptográfica y publicación de notas en Nostr utilizando únicamente contenido de prueba. Construimos un evento de tipo uno con clave pública, timestamp, etiquetas y contenido, calculamos su identificador mediante la serialización definida por NIP-01 y generamos una firma Schnorr de referencia con material de prueba mantenido temporalmente en memoria, sin persistir claves secretas. Implementamos la comprobación criptográfica local de ese evento y de dos variantes predefinidas, mostrando cómo alterar un carácter cambia el identificador y cómo conservar una firma antigua provoca una verificación fallida incluso si recalculamos el identificador. Describimos el flujo de publicación hacia relay.damus.io, nos.lol, nostr.wine y un relay de clase, cuyo endpoint no se inventa cuando no ha sido proporcionado. Presentamos una tabla de respuestas ilustrativas de aceptación o rechazo, la consulta por identificador y la distinción entre almacenamiento, conectividad y política de cada relay. Modelamos el bloqueo de una clave pública en el destino de clase y comparamos la recuperación desde otros relays sin atribuir un bloqueo real. Cerramos con una reflexión académica de tres líneas sobre resistencia a la censura, disponibilidad y permanencia, y entregamos HTML, CSS, JavaScript, fixture público y README con controles accesibles, fuentes y conclusiones sobre integridad y distribución.</p>
+</section>
+<section id="objetivos" class="report-section " aria-labelledby="objetivos-title">
+<div class="section-heading">
+<span class="section-index">objetivos</span>
+<h2 id="objetivos-title">Objetivos</h2>
+</div>
+<div class="concept-grid">
+<article class="concept-card">
+<h3>Comprobar integridad</h3>
+<p>Reconstruimos la preimagen del identificador y verificamos la firma. Una nota legible no necesariamente coincide con el contenido que fue firmado.</p>
+</article>
+<article class="concept-card">
+<h3>Separar estados de publicación</h3>
+<p>Analizamos aceptación, rechazo, consulta y recuperación. Un envío por WebSocket no prueba conservación ni lectura posterior.</p>
+</article>
+<article class="concept-card">
+<h3>Entender independencia</h3>
+<p>La misma firma puede circular entre relays. La diversidad reduce dependencia de un operador y no crea disponibilidad universal.</p>
+</article>
+</div>
+</section>
+<section id="tecnologias" class="report-section " aria-labelledby="tecnologias-title">
+<div class="section-heading">
+<span class="section-index">tecnologias</span>
+<h2 id="tecnologias-title">Tecnologías utilizadas</h2>
+</div>
+<div class="concept-grid">
+<article class="concept-card">
+<h3>NIP-01</h3>
+<p>Define el evento básico, su serialización para hashing y mensajes entre cliente y relay. Los filtros permiten solicitar eventos por identificadores y otros atributos.</p>
+</article>
+<article class="concept-card">
+<h3>SHA-256</h3>
+<p>Deriva el id de la representación canónica del evento. Un hash no es una firma y no acredita autoría por sí mismo.</p>
+</article>
+<article class="concept-card">
+<h3>Schnorr / secp256k1</h3>
+<p>Nostr utiliza firmas conforme a BIP-340. La clave pública permite verificar; la clave secreta habilita firma y debe mantenerse fuera de la web.</p>
+</article>
+<article class="concept-card">
+<h3>Relays WebSocket</h3>
+<p>Reciben eventos y gestionan suscripciones. Cada operador decide políticas, requisitos y conservación; no existe una aceptación global única.</p>
+</article>
+</div>
+</section>
+<section id="desarrollo" class="report-section " aria-labelledby="desarrollo-title">
+<div class="section-heading">
+<span class="section-index">desarrollo</span>
+<h2 id="desarrollo-title">Desarrollo del laboratorio</h2>
+</div>
+<article class="subsection">
+<h3>01 / Preparar identidad de prueba</h3>
+<p>Una identidad de prueba permite estudiar el protocolo sin mezclar actividad académica con cuentas personales. Para crear el fixture usamos material efímero en memoria durante la construcción, firmamos el contenido y descartamos ese material. Solo se conserva la clave pública junto con el evento. La página no genera ni exporta secretos, no usa almacenamiento local para claves y nunca requiere que el lector introduzca material sensible.</p>
+<p>La clave pública representa una identidad criptográfica, no una identidad civil garantizada. Un atacante puede generar muchas claves; verificar la firma solo demuestra coherencia con una clave concreta. Vincularla a una persona u organización requiere contexto y otros mecanismos. Por ello la nota se describe como Aurora de prueba y no como un mensaje auténtico de una entidad real.</p>
+</article>
+<article class="subsection">
+<h3>02 / Construir el evento y su identificador</h3>
+<p>El evento incluye id, pubkey, created_at, kind, tags, content y sig. created_at expresa segundos Unix y no certifica cuándo un tercero recibió el evento. kind 1 identifica la nota textual del ejercicio. Las etiquetas son arreglos de cadenas que aportan referencias o temas. El contenido firmado es público en esta nota; una firma no proporciona confidencialidad.</p>
+<figure class="code-block">
+<figcaption>
+<span>Serialización canónica antes del hashing</span>
+<span>JavaScript</span>
+</figcaption>
+<pre>
+<code data-language="JavaScript">const preimagen = JSON.stringify([
+  0,
+  evento.pubkey,
+  evento.created_at,
+  evento.kind,
+  evento.tags,
+  evento.content
+]);
+const id = await sha256(new TextEncoder().encode(preimagen));
+// La firma Schnorr se verifica sobre los 32 bytes del id.
+// id y sig no se incluyen dentro de la preimagen.</code>
+</pre>
+</figure>
+<p>La representación evita depender del orden de propiedades del objeto exterior. Se conserva el orden de los elementos del arreglo y el contenido exacto. El id ocupa sesenta y cuatro caracteres hexadecimales y la firma ciento veintiocho. Estos tamaños no bastan para probar validez: también hay que comprobar correspondencia del hash y la relación criptográfica de la firma. La especificación <a href="https://github.com/nostr-protocol/nips/blob/master/01.md" target="_blank" rel="noopener">NIP-01</a> define esa estructura.</p>
+</article>
+<figure class="diagram">
+<div class="flow">
+<div class="flow-node">
+<span class="node-index">01</span>
+<strong>Evento</strong>
+<small>Campos y contenido exactos</small>
+</div>
+<span class="flow-arrow" aria-hidden="true">→</span>
+<div class="flow-node">
+<span class="node-index">02</span>
+<strong>Preimagen</strong>
+<small>Arreglo canónico UTF-8</small>
+</div>
+<span class="flow-arrow" aria-hidden="true">→</span>
+<div class="flow-node">
+<span class="node-index">03</span>
+<strong>SHA-256</strong>
+<small>Identificador de 32 bytes</small>
+</div>
+<span class="flow-arrow" aria-hidden="true">→</span>
+<div class="flow-node">
+<span class="node-index">04</span>
+<strong>Schnorr</strong>
+<small>Firma verificable con pubkey</small>
+</div>
+</div>
+<figcaption>Prueba de integridad y autoría criptográfica.</figcaption>
+</figure>
+<article class="subsection">
+<h3>03 / Alterar un carácter y verificar</h3>
+<p>La primera variante mantiene el id y sig del fixture pero cambia el punto final del contenido por un signo de exclamación. Recalcular el hash produce un id distinto, así que el evento ya no conserva integridad. La segunda variante actualiza el id al hash nuevo y conserva la firma original: supera la comparación de identificador y falla la verificación Schnorr. Esa distinción muestra por qué calcular un hash nuevo no permite suplantar al autor.</p>
+<p>Implementamos un verificador educativo de BIP-340 con aritmética de enteros grandes y SHA-256 del navegador. Su alcance es validar este ejemplo y casos de prueba; no se presenta como biblioteca auditada de producción. La comprobación trabaja con la clave pública de coordenada x, valida rangos, reconstruye la ecuación de verificación y comprueba el punto resultante. El evento original tiene una firma válida creada para este ejercicio, no una firma arbitraria inventada.</p>
+<figure class="code-block">
+<figcaption>
+<span>Dos condiciones distintas para aceptar el evento</span>
+<span>JavaScript</span>
+</figcaption>
+<pre>
+<code data-language="JavaScript">const idCalculado = await hashEvent(evento);
+const integridad = idCalculado === evento.id;
+const firma = await verifySchnorr(
+  evento.sig, evento.id, evento.pubkey
+);
+const aceptable = integridad &amp;&amp; firma;
+// Nunca basta con que el campo id conserve apariencia válida.</code>
+</pre>
+</figure>
+</article>
+<article class="subsection">
+<h3>04 / Distribuir y recuperar por identificador</h3>
+<p>El cliente utiliza EVENT para enviar el evento y espera OK con id, booleano y mensaje. Una política puede rechazar por límites, pagos, autenticación o moderación; la clave sigue existiendo aunque un relay la bloquee. REQ abre una consulta por id y EOSE delimita el conjunto de eventos almacenados devueltos al iniciar una suscripción. La recepción de EOSE sin un evento no equivale a una prueba universal de inexistencia.</p>
+<figure class="code-block">
+<figcaption>
+<span>Mensajes de protocolo · estructura ilustrativa</span>
+<span>Protocolo</span>
+</figcaption>
+<pre>
+<code data-language="Protocolo">["EVENT", evento]
+["OK", idDelEvento, true, ""]
+["OK", idDelEvento, false, "blocked: clave de prueba bloqueada"]
+["REQ", "consulta-lab19", {"ids": [idDelEvento]}]
+["EVENT", "consulta-lab19", evento]
+["EOSE", "consulta-lab19"]
+["CLOSE", "consulta-lab19"]</code>
+</pre>
+</figure>
+<p>La visualización sustituye idDelEvento por el identificador del fixture calculado. El esquema anterior expresa variables conceptuales y no una captura de frames JSON reales. Consideramos los tres dominios solicitados y un relay de clase sin endpoint asignado. No suponemos que los servicios públicos acepten esta nota en la actualidad; sus políticas pueden variar. El lector ve respuestas modeladas junto al estado de cada destino.</p>
+</article>
+<div class="table-scroll">
+<table>
+<caption>Cuatro destinos del flujo académico</caption>
+<thead>
+<tr>
+<th scope="col">Relay</th>
+<th scope="col">Destino conceptual</th>
+<th scope="col">Conexión en esta entrega</th>
+<th scope="col">Respuesta inicial del modelo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Damus</th>
+<td>wss://relay.damus.io</td>
+<td>No realizada</td>
+<td>OK true ilustrativo</td>
+</tr>
+<tr>
+<th scope="row">nos.lol</th>
+<td>wss://nos.lol</td>
+<td>No realizada</td>
+<td>OK true ilustrativo</td>
+</tr>
+<tr>
+<th scope="row">Nostr Wine</th>
+<td>wss://nostr.wine</td>
+<td>No realizada</td>
+<td>OK true ilustrativo; políticas reales no evaluadas</td>
+</tr>
+<tr>
+<th scope="row">Clase</th>
+<td>Endpoint no proporcionado</td>
+<td>No realizada</td>
+<td>OK true antes del bloqueo simulado</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="interactivo" class="report-section interactive-section" aria-labelledby="interactivo-title">
+<div class="section-heading">
+<span class="section-index">interactivo</span>
+<h2 id="interactivo-title">Una nota verificable / múltiples destinos</h2>
+</div>
+<div class="nostr-lab">
+<div class="signed-note">
+<p class="eyebrow">EVENTO DE PRUEBA · FIRMA LOCAL VERIFICABLE</p>
+<h3>Hola, Web3.</h3>
+<p id="nostr-content">Hola, Web3: una nota de prueba viaja entre relays.</p>
+<div class="variant-controls" role="group" aria-label="Variante del evento">
+<button data-event-mode="original" aria-pressed="true">Original</button>
+<button data-event-mode="alterado" aria-pressed="false">Alterar carácter</button>
+<button data-event-mode="rehash" aria-pressed="false">Recalcular ID</button>
+</div>
+<dl class="event-results">
+<dt>ID del evento</dt>
+<dd id="event-id">Leyendo fixture público…</dd>
+<dt>Integridad y firma</dt>
+<dd id="signature-status" aria-live="polite">Verificación en curso…</dd>
+</dl>
+<details>
+<summary>Ver formato completo del evento público</summary>
+<pre>
+<code id="event-json">Cargando…</code>
+</pre>
+</details>
+</div>
+<div class="relay-distribution">
+<h3>Mapa de disponibilidad</h3>
+<p class="note">Escenario ilustrativo. No se publica ni consulta en la red.</p>
+<div class="relay-map">
+<span class="author-node">AUTOR / MISMA FIRMA</span>
+<div class="relay-grid">
+<article data-relay="damus">
+<strong>relay.damus.io</strong>
+<span>Acepta / modelo</span>
+</article>
+<article data-relay="nos">
+<strong>nos.lol</strong>
+<span>Acepta / modelo</span>
+</article>
+<article data-relay="wine">
+<strong>nostr.wine</strong>
+<span>Acepta / modelo</span>
+</article>
+<article data-relay="clase">
+<strong>Relay de clase</strong>
+<span>Acepta / modelo</span>
+</article>
+</div>
+</div>
+<div class="experiment-controls">
+<button id="relay-block" aria-pressed="false">Simular bloqueo en clase</button>
+<button id="relay-outage" aria-pressed="false">Simular caída de otros relays</button>
+<button id="relay-query">Consultar ID en el modelo</button>
+</div>
+<pre class="relay-log" id="relay-output" aria-live="polite">Modelo: cuatro copias disponibles.</pre>
+</div>
+</div>
+</section>
+<section id="resultados" class="report-section " aria-labelledby="resultados-title">
+<div class="section-heading">
+<span class="section-index">resultados</span>
+<h2 id="resultados-title">Resultados e interpretación</h2>
+</div>
+<p>El fixture tiene hash y firma reales verificables localmente. La variante original supera ambas comprobaciones. Modificar el contenido sin actualizar id produce una discrepancia de integridad; recalcular id sin firmar otra vez produce falla Schnorr. Esos resultados proceden del cálculo en el navegador y se repiten mediante las verificaciones automatizadas del proyecto.</p>
+<p>En el escenario de distribución, el bloqueo de clase cambia la respuesta de ese destino y deja otras tres copias modeladas. Al añadir una caída de los demás relays, ninguna copia remota del modelo queda accesible. La nota local y su firma no se destruyen, pero la recuperación remota falla. Estos estados son simulación y no evidencia de moderación real ni de aceptación pública.</p>
+<blockquote class="reflection">
+<p>La firma conserva integridad y atribución criptográfica aunque cambie el relay.</p>
+<p>La diversidad de relays reduce la dependencia de una política de publicación.</p>
+<p>La resistencia a la censura necesita copias accesibles y no garantiza permanencia.</p>
+</blockquote>
+</section>
+<section id="analisis" class="report-section " aria-labelledby="analisis-title">
+<div class="section-heading">
+<span class="section-index">analisis</span>
+<h2 id="analisis-title">Análisis crítico</h2>
+</div>
+<article class="subsection">
+<h3>Bloqueo, publicación y disponibilidad</h3>
+<p>Un relay puede rechazar nuevos eventos, dejar de devolver históricos o exigir condiciones de acceso. El bloqueo modelado afecta publicación y recuperación en clase; en una operación real documentaríamos cada conducta por separado. Un evento aceptado no obliga al operador a conservarlo indefinidamente. Un cliente necesita reintentos, verificación de respuestas y estrategia de copias si su aplicación requiere disponibilidad sostenida.</p>
+</article>
+<article class="subsection">
+<h3>Higiene e identidad</h3>
+<p>La pérdida o exposición de una clave de firma puede permitir suplantación; la firma matemática no reconoce al titular legítimo cuando un atacante también tiene el secreto. Mantener claves fuera de interfaces públicas, usar identidades de prueba y revisar herramientas reduce riesgo. Nuestro fixture permite demostrar el protocolo sin conservar la capacidad de firmar. Además, relays pueden observar IP de clientes, tiempos y consultas: publicación descentralizada no equivale a anonimato ni cifrado de contenido.</p>
+</article>
+</section>
+<section id="rubrica" class="report-section " aria-labelledby="rubrica-title">
+<div class="section-heading">
+<span class="section-index">rubrica</span>
+<h2 id="rubrica-title">Rúbrica de evaluación</h2>
+</div>
+<p class="note">Criterios y porcentajes originales proporcionados para este laboratorio. La columna de alcance describe lo presentado, sin asignar una calificación ni acreditar ejecuciones externas.</p>
+<div class="table-scroll">
+<table>
+<caption>Rúbrica académica original · laboratorio 19</caption>
+<thead>
+<tr>
+<th scope="col">Criterio</th>
+<th scope="col">Peso</th>
+<th scope="col">Alcance del trabajo presentado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Tabla completa de relays y respuestas</th>
+<td>35%</td>
+<td>Cuatro destinos con respuestas modeladas; ninguna aceptación atribuida a la red.</td>
+</tr>
+<tr>
+<th scope="row">Evidencia del bloqueo en el relay de clase</th>
+<td>20%</td>
+<td>Bloqueo simulado; endpoint de clase no proporcionado, sin evidencia externa.</td>
+</tr>
+<tr>
+<th scope="row">Comprobación de firma digital original y modificada</th>
+<td>20%</td>
+<td>Verificación criptográfica local de fixture firmado y variantes alteradas.</td>
+</tr>
+<tr>
+<th scope="row">Reflexión académica de tres líneas</th>
+<td>15%</td>
+<td>Tres líneas incluidas en resultados.</td>
+</tr>
+<tr>
+<th scope="row">Higiene de claves y cumplimiento de límites</th>
+<td>10%</td>
+<td>Sin claves secretas persistidas; contenido exclusivamente de prueba.</td>
+</tr>
+</tbody>
+<tfoot>
+<tr>
+<th scope="row">Total</th>
+<td>100%</td>
+<td>Las simulaciones se identifican y no acreditan ejecuciones externas.</td>
+</tr>
+</tfoot>
+</table>
+</div>
+<p class="note">Restricciones aplicadas: contenido exclusivamente de prueba; sin mostrar ni almacenar claves secretas; bloqueo y respuestas externas nunca atribuidos a ejecuciones no realizadas. No se proporcionó texto adicional de penalizaciones; no asignamos deducciones ni sanciones inventadas.</p>
+</section>
+<section id="conclusiones" class="report-section " aria-labelledby="conclusiones-title">
+<div class="section-heading">
+<span class="section-index">conclusiones</span>
+<h2 id="conclusiones-title">Conclusiones</h2>
+</div>
+<ol class="conclusions">
+<li>La comprobación de un evento exige concordancia del identificador y validez de firma. Las dos variantes alteradas muestran por qué ninguna condición aislada sustituye a la otra.</li>
+<li>La identidad criptográfica puede conservarse al cambiar de relay. Esa portabilidad permite distribuir la misma nota y reduce dependencia de una cuenta gestionada por un servidor único.</li>
+<li>El bloqueo en un destino no invalida la firma ni borra copias de otros operadores. Su impacto en disponibilidad depende de qué otras copias siguen accesibles y de las políticas reales de lectura.</li>
+<li>La resistencia a la censura es una propiedad operacional condicionada. Diversidad, conservación y acceso importan; una nota firmada no garantiza presencia universal ni permanencia.</li>
+</ol>
+</section>
+<section id="aprendizajes" class="report-section " aria-labelledby="aprendizajes-title">
+<div class="section-heading">
+<span class="section-index">aprendizajes</span>
+<h2 id="aprendizajes-title">Aprendizajes</h2>
+</div>
+<p>Aprendimos a reconstruir un evento Nostr y a distinguir hashing, firma y publicación. La alteración de un carácter mostró por qué la integridad requiere verificación criptográfica, mientras que el modelo de relays nos permitió comprender que una identidad portable todavía depende de copias accesibles y buena higiene de claves.</p>
+</section>
+<section id="documentacion" class="report-section " aria-labelledby="documentacion-title">
+<div class="section-heading">
+<span class="section-index">documentacion</span>
+<h2 id="documentacion-title">Documentación y fuentes</h2>
+</div>
+<a class="doc-link" href="README.md">Leer el README del laboratorio 19 ↗</a>
+<a class="doc-link" href="event-demo.json" download>Descargar evento público de prueba ↓</a>
+<p>Las referencias fundamentan los protocolos y las declaraciones atribuidas. Los cálculos locales, modelos didácticos y límites de observación se explican junto a cada resultado.</p>
+<ul class="sources">
+<li>
+<a href="https://github.com/nostr-protocol/nips/blob/master/01.md" target="_blank" rel="noopener noreferrer">Nostr · NIP-01 ↗</a>
+</li>
+<li>
+<a href="https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki" target="_blank" rel="noopener noreferrer">Bitcoin · BIP-340 Schnorr ↗</a>
+</li>
+<li>
+<a href="https://github.com/nostr-protocol/nips/blob/master/11.md" target="_blank" rel="noopener noreferrer">Nostr · políticas e información NIP-11 ↗</a>
+</li>
+</ul>
+</section>
+</div>
+</div>
+</main>
+<footer class="site-footer">
+<a href="../index.html">← Colección Web3 Labs</a>
+<p>Laboratorio 19 · Nostr: notas firmadas y múltiples relays · Sesión 22</p>
+<a href="#">Volver al inicio ↑</a>
+</footer>
+</body>
+</html>
